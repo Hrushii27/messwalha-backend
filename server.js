@@ -21,21 +21,33 @@ const PORT = process.env.PORT || 5000;
    SECURITY & MIDDLEWARE
 =========================== */
 
-app.set("trust proxy", 1); // required for Heroku
+app.set("trust proxy", 1);
+
+// 🔥 IMPORTANT: CORS CONFIG
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://172.23.224.1:5173", // your current dev IP
+  "https://messwalha-frontend.vercel.app"
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 app.use(helmet());
 app.use(compression());
 app.use(morgan("dev"));
-
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173", // local frontend
-      "https://messwalha-frontend.vercel.app", // production frontend
-    ],
-    credentials: true,
-  })
-);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -67,12 +79,19 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get('/api', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'MessWalha API endpoint is active. Use subroutes like /auth, /messes etc.' });
+app.get("/api", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message:
+      "MessWalha API endpoint is active. Use subroutes like /auth, /messes etc.",
+  });
 });
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'API is running' });
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message: "API is running",
+  });
 });
 
 /* ===========================
@@ -88,8 +107,7 @@ app.use((req, res) => {
 =========================== */
 
 app.use((err, req, res, next) => {
-  console.error("🔥 Error:", err.stack);
-
+  console.error("🔥 Error:", err.message);
   res.status(err.status || 500).json({
     message: err.message || "Internal Server Error",
   });
